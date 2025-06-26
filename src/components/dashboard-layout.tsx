@@ -94,7 +94,7 @@ export function DashboardLayout({
   );
 
   const userName = user?.email?.split('@')[0] || "User";
-  const userRole = user?.displayName || "Role";
+  const userRole = user?.displayName || "candidate";
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -149,7 +149,9 @@ export function DashboardLayout({
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem><Settings className="mr-2 h-4 w-4"/>Settings</DropdownMenuItem>
-              <DropdownMenuItem><CircleUser className="mr-2 h-4 w-4"/>Profile</DropdownMenuItem>
+               <DropdownMenuItem onSelect={() => router.push(`/${userRole}/profile`)} className="cursor-pointer">
+                <CircleUser className="mr-2 h-4 w-4"/>Profile
+               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-destructive" onSelect={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</DropdownMenuItem>
             </DropdownMenuContent>
