@@ -24,12 +24,12 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, limit, orderBy } from 'firebase/firestore';
 import type { DocumentData } from 'firebase/firestore';
+import { toast } from '@/hooks/use-toast';
 
 interface Application extends DocumentData {
   id: string;
   jobTitle: string;
   company: string;
-
   status: string;
   appliedAt?: { toDate: () => Date };
 }
@@ -74,6 +74,10 @@ export default function CandidateDashboard() {
     const unsubscribeJobs = onSnapshot(jobsQuery, (snapshot) => {
         const jobsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
         setRecentJobs(jobsData);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching jobs from dashboard: ", error);
+        toast({ title: "Error", description: "Could not fetch new jobs. This might be due to a missing database index. Check the browser console for a link to create it.", variant: "destructive" });
         setIsLoading(false);
     });
 
