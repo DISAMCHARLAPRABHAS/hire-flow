@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -51,6 +52,7 @@ export default function CandidateJobsPage() {
           title: "Error fetching jobs", 
           description: "Could not fetch job listings. This might be due to a missing database index. Check your browser's developer console for an error message from Firebase with a link to create the required index.", 
           variant: "destructive",
+          duration: 10000,
         });
         setIsLoading(false);
     });
@@ -102,23 +104,38 @@ export default function CandidateJobsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold md:text-2xl font-headline">Find Your Next Job</h1>
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input type="search" placeholder="Search jobs, skills, experience..." className="pl-8" onChange={(e) => setSearchTerm(e.target.value)} />
+       <div className="space-y-6">
+        <div className="text-center">
+            <h1 className="text-3xl font-bold font-headline tracking-tight sm:text-4xl">Find Your Next Opportunity</h1>
+            <p className="mt-2 text-muted-foreground">Browse through thousands of open positions from top companies.</p>
+        </div>
+        <div className="relative mx-auto w-full max-w-2xl">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input 
+              type="search" 
+              placeholder="Search by job title, company, skills..." 
+              className="w-full rounded-md pl-12 pr-4 py-3 h-12 text-base shadow-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)} 
+          />
         </div>
       </div>
 
+
       {isLoading ? (
-         <div className="flex justify-center items-center h-64">
+         <div className="flex justify-center items-center h-64 pt-10">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
       ) : (
         <Dialog open={!!selectedJob} onOpenChange={(isOpen) => !isOpen && setSelectedJob(null)}>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 pt-8">
             {filteredJobs.length === 0 ? (
-                <p className="text-muted-foreground col-span-full text-center">No open jobs found.</p>
+                <div className="col-span-full text-center py-10">
+                  <h3 className="text-xl font-semibold">No Jobs Found</h3>
+                  <p className="text-muted-foreground">
+                    {searchTerm ? "Try adjusting your search terms." : "There are currently no open positions. Check back later!"}
+                  </p>
+                </div>
             ) : (
                 filteredJobs.map((job) => (
                 <Card key={job.id} className="cursor-pointer hover:border-primary transition-colors flex flex-col">
