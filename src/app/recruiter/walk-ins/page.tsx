@@ -21,25 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Calendar, Users, Edit, Trash } from "lucide-react";
 
-const walkIns = [
-  {
-    company: "Innovate Inc.",
-    title: "Engineering & Design Walk-in",
-    date: "2024-08-20",
-    roles: ["Frontend", "Backend", "UX/UI"],
-    attendees: 18,
-    slots: 25,
-  },
-  {
-    company: "Data Solutions",
-    title: "Analytics & Data Science Drive",
-    date: "2024-08-22",
-    roles: ["Data Analyst", "Data Scientist", "BI Engineer"],
-    attendees: 12,
-    slots: 15,
-  },
-];
-
+const walkIns: any[] = [];
 
 export default function RecruiterWalkInsPage() {
   return (
@@ -77,41 +59,50 @@ export default function RecruiterWalkInsPage() {
           </DialogContent>
         </Dialog>
       </div>
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {walkIns.map((drive, index) => (
-          <Card key={index} className="flex flex-col">
-            <CardHeader>
-              <CardTitle className="font-headline">{drive.title}</CardTitle>
-              <CardDescription>{drive.company}</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 flex-grow">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4 mr-2" />
-                Date: {drive.date}
-              </div>
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Users className="h-4 w-4 mr-2" />
-                {drive.attendees} / {drive.slots} attendees
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2 text-sm">Open Roles:</h4>
-                <div className="flex flex-wrap gap-2">
-                    {drive.roles.map(role => (
-                        <Badge key={role} variant="outline">{role}</Badge>
-                    ))}
+      {walkIns.length === 0 ? (
+        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+          <div className="flex flex-col items-center gap-1 text-center">
+            <h3 className="text-2xl font-bold tracking-tight">No walk-in drives created</h3>
+            <p className="text-sm text-muted-foreground">Click "Create Walk-in Drive" to get started.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {walkIns.map((drive, index) => (
+            <Card key={index} className="flex flex-col">
+              <CardHeader>
+                <CardTitle className="font-headline">{drive.title}</CardTitle>
+                <CardDescription>{drive.company}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 flex-grow">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Date: {drive.date}
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-                <Button>View Attendees</Button>
-                <div className="flex gap-2">
-                    <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
-                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash className="h-4 w-4"/></Button>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <Users className="h-4 w-4 mr-2" />
+                  {drive.attendees} / {drive.slots} attendees
                 </div>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+                <div>
+                  <h4 className="font-semibold mb-2 text-sm">Open Roles:</h4>
+                  <div className="flex flex-wrap gap-2">
+                      {drive.roles.map((role: string) => (
+                          <Badge key={role} variant="outline">{role}</Badge>
+                      ))}
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                  <Button>View Attendees</Button>
+                  <div className="flex gap-2">
+                      <Button variant="ghost" size="icon"><Edit className="h-4 w-4"/></Button>
+                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash className="h-4 w-4"/></Button>
+                  </div>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
     </>
   );
 }

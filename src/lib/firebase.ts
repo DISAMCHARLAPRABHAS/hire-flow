@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,13 +15,15 @@ const firebaseConfigured = !!firebaseConfig.apiKey;
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
+let db: Firestore | null = null;
 
 if (firebaseConfigured) {
   app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
   auth = getAuth(app);
+  db = getFirestore(app);
 } else {
   // This message will be visible in the server logs
   console.warn("Firebase configuration not found. Please create a .env.local file with your Firebase project credentials.");
 }
 
-export { app, auth, firebaseConfigured };
+export { app, auth, db, firebaseConfigured };
