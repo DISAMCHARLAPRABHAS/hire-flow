@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import type { DocumentData } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 
@@ -46,12 +46,12 @@ export default function CandidateApplicationsPage() {
     setIsLoading(true);
     const q = query(
       collection(db, "applications"),
-      where("candidateId", "==", user.uid),
-      orderBy("appliedAt", "desc")
+      where("candidateId", "==", user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const appsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
+      appsData.sort((a, b) => (b.appliedAt?.toDate()?.getTime() || 0) - (a.appliedAt?.toDate()?.getTime() || 0));
       setApplications(appsData);
       setIsLoading(false);
     }, (error) => {
