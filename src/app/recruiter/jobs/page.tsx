@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc, orderBy } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc, orderBy, writeBatch, getDocs } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -182,14 +182,35 @@ export default function RecruiterJobsPage() {
 
   const handleDeleteJob = async (jobId: string | undefined) => {
     if (!jobId || !db) return;
+    setIsSubmitting(true);
     try {
-      await deleteDoc(doc(db, "jobs", jobId));
-      toast({ title: "Success", description: "Job deleted successfully." });
+      const batch = writeBatch(db);
+
+      // 1. Reference the job to be deleted
+      const jobRef = doc(db, "jobs", jobId);
+      
+      // 2. Find all applications for this job
+      const appsQuery = query(collection(db, "applications"), where("jobId", "==", jobId));
+      const appsSnapshot = await getDocs(appsQuery);
+      
+      // 3. Add all application deletions to the batch
+      appsSnapshot.forEach((appDoc) => {
+        batch.delete(appDoc.ref);
+      });
+
+      // 4. Add the job deletion to the batch
+      batch.delete(jobRef);
+
+      // 5. Commit the batch
+      await batch.commit();
+
+      toast({ title: "Success", description: "Job and all associated applications have been deleted." });
     } catch (error) {
       console.error("Error deleting job: ", error);
       toast({ title: "Error", description: "Failed to delete job.", variant: "destructive" });
     } finally {
       setJobToDelete(null);
+      setIsSubmitting(false);
     }
   }
   
@@ -356,11 +377,13 @@ export default function RecruiterJobsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive hover:bg-destructive/90"
               onClick={() => handleDeleteJob(jobToDelete?.id)}
+              disabled={isSubmitting}
             >
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Yes, delete it
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -369,5 +392,7 @@ export default function RecruiterJobsPage() {
     </>
   );
 }
+
+    
 
     
