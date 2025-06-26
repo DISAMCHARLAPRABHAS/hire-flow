@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/auth-provider";
 export const metadata: Metadata = {
   title: "HireFlow",
   description: "The All-In-One Platform to Streamline Your Hiring.",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
