@@ -6,14 +6,14 @@ import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment, orderBy } from 'firebase/firestore';
 import type { DocumentData } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 import { Briefcase, MapPin, Search, Loader2, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 
@@ -38,6 +38,8 @@ export default function CandidateJobsPage() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set());
+  const [isApplyingExternally, setIsApplyingExternally] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!db) return;
@@ -63,6 +65,21 @@ export default function CandidateJobsPage() {
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!user || !db) return;
+
+    const q = query(collection(db, "applications"), where("candidateId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const ids = new Set<string>();
+        snapshot.forEach((doc) => {
+            ids.add(doc.data().jobId);
+        });
+        setAppliedJobIds(ids);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const handleApply = async () => {
     if (!user || !selectedJob || !db) {
@@ -95,6 +112,47 @@ export default function CandidateJobsPage() {
       toast({ title: "Error", description: "Failed to submit application.", variant: "destructive" });
     } finally {
         setIsSubmitting(false);
+    }
+  };
+
+  const handleExternalApply = async (job: Job) => {
+    if (!user || !db || !job.externalApplyLink) {
+      toast({ title: "Error", description: "You must be logged in to apply.", variant: "destructive" });
+      return;
+    }
+    
+    setIsApplyingExternally(prev => new Set(prev).add(job.id));
+    
+    try {
+      window.open(job.externalApplyLink, '_blank', 'noopener,noreferrer');
+
+      await addDoc(collection(db, "applications"), {
+        jobId: job.id,
+        jobTitle: job.title,
+        company: job.company,
+        recruiterId: job.recruiterId,
+        candidateId: user.uid,
+        candidateName: user.email?.split('@')[0] || user.email,
+        candidateEmail: user.email,
+        status: 'Applied',
+        appliedAt: serverTimestamp(),
+      });
+      
+      const jobRef = doc(db, "jobs", job.id);
+      await updateDoc(jobRef, {
+        applications: increment(1)
+      });
+
+      toast({ title: "Success", description: `Your application for ${job.title} has been recorded.` });
+    } catch (error) {
+      console.error("Error applying for external job: ", error);
+      toast({ title: "Error", description: "Failed to record application.", variant: "destructive" });
+    } finally {
+      setIsApplyingExternally(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(job.id);
+        return newSet;
+      });
     }
   };
   
@@ -143,9 +201,16 @@ export default function CandidateJobsPage() {
             ) : (
                 filteredJobs.map((job) => (
                 <Card 
-                  key={job.id} 
-                  className="flex flex-col cursor-pointer hover:border-primary transition-colors group"
-                  onClick={() => !job.externalApplyLink && setSelectedJob(job)}
+                  key={job.id}
+                  className={cn(
+                    "flex flex-col transition-colors group",
+                    !job.externalApplyLink && !appliedJobIds.has(job.id) && "cursor-pointer hover:border-primary"
+                  )}
+                  onClick={() => {
+                      if (!job.externalApplyLink && !appliedJobIds.has(job.id)) {
+                          setSelectedJob(job);
+                      }
+                  }}
                 >
                     <CardHeader>
                       <CardTitle className="font-headline group-hover:text-primary">{job.title}</CardTitle>
@@ -173,11 +238,19 @@ export default function CandidateJobsPage() {
                       </div>
                     </CardContent>
                     <CardFooter>
-                      {job.externalApplyLink ? (
-                        <Button asChild className="w-full" onClick={(e) => e.stopPropagation()}>
-                          <a href={job.externalApplyLink} target="_blank" rel="noopener noreferrer">
-                            Apply Externally
-                          </a>
+                      {appliedJobIds.has(job.id) ? (
+                        <Button className="w-full" disabled>Applied</Button>
+                      ) : job.externalApplyLink ? (
+                        <Button 
+                          className="w-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExternalApply(job);
+                          }}
+                          disabled={isApplyingExternally.has(job.id)}
+                        >
+                          {isApplyingExternally.has(job.id) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Apply Externally
                         </Button>
                       ) : (
                         <div className="w-full text-center text-sm font-medium text-primary py-2">
