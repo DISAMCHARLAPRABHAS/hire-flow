@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from "next/link";
-import { ArrowUpRight, Briefcase, User, Loader2 } from "lucide-react";
+import { ArrowUpRight, Briefcase, User, Loader2, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,35 +30,55 @@ interface Application extends DocumentData {
   jobTitle: string;
   company: string;
   status: string;
+  appliedAt?: { toDate: () => Date };
+}
+
+interface Job extends DocumentData {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  createdAt: { toDate: () => Date };
 }
 
 export default function CandidateDashboard() {
   const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
+  const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [activeApplicationsCount, setActiveApplicationsCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
     if (!user || !db) return;
 
-    const q = query(
+    setIsLoading(true);
+
+    const appsQuery = query(
         collection(db, "applications"), 
         where("candidateId", "==", user.uid)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeApps = onSnapshot(appsQuery, (snapshot) => {
         const allApps = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
         
-        const sortedApps = [...allApps].sort((a, b) => (b.appliedAt?.toDate() || 0) - (a.appliedAt?.toDate() || 0));
+        const sortedApps = [...allApps].sort((a, b) => (b.appliedAt?.toDate()?.getTime() || 0) - (a.appliedAt?.toDate()?.getTime() || 0));
         setApplications(sortedApps);
 
         const activeApps = allApps.filter(app => app.status === 'Applied' || app.status === 'In Review' || app.status === 'Interviewing').length;
         setActiveApplicationsCount(activeApps);
-        
+    });
+
+    const jobsQuery = query(collection(db, "jobs"), where("status", "==", "Open"), orderBy("createdAt", "desc"), limit(3));
+    const unsubscribeJobs = onSnapshot(jobsQuery, (snapshot) => {
+        const jobsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+        setRecentJobs(jobsData);
         setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribeApps();
+        unsubscribeJobs();
+    };
   }, [user]);
 
   const getBadgeVariant = (status: string) => {
@@ -79,14 +99,16 @@ export default function CandidateDashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
-              Upcoming Interviews
+              Open Jobs
             </CardTitle>
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">
+              <Link href="/candidate/jobs" className="hover:text-primary hover:underline">Explore</Link>
+            </div>
             <p className="text-xs text-muted-foreground">
-              You have 0 interviews scheduled.
+              Find your next role
             </p>
           </CardContent>
         </Card>
@@ -111,13 +133,56 @@ export default function CandidateDashboard() {
       </div>
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Upcoming Interviews</CardTitle>
+          <CardHeader className="flex flex-row items-center">
+            <div className="grid gap-2">
+                <CardTitle>New Job Postings</CardTitle>
+                <CardDescription>
+                Recently added jobs you might be interested in.
+                </CardDescription>
+            </div>
+            <Button asChild size="sm" className="ml-auto gap-1">
+              <Link href="/candidate/jobs">
+                View All
+                <ArrowUpRight className="h-4 w-4" />
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
-             <div className="flex items-center justify-center h-40 text-muted-foreground">
-                <p>No interviews scheduled.</p>
-            </div>
+            {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+            ) : (
+            <Table>
+               <TableHeader>
+                <TableRow>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Company</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentJobs.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={2} className="h-24 text-center">No new jobs posted recently.</TableCell>
+                    </TableRow>
+                ) : (
+                recentJobs.map((job) => (
+                    <TableRow key={job.id}>
+                    <TableCell>
+                      <div className="font-medium">{job.title}</div>
+                      <div className="text-sm text-muted-foreground flex items-center">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {job.location || 'N/A'}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {job.company}
+                    </TableCell>
+                  </TableRow>
+                )))}
+              </TableBody>
+            </Table>
+            )}
           </CardContent>
         </Card>
         <Card>
