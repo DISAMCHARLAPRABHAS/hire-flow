@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc, orderBy, writeBatch, getDocs } from "firebase/firestore";
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc, writeBatch, getDocs } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,13 +90,16 @@ export default function RecruiterJobsPage() {
     if (!user || !db) return;
     
     setIsLoading(true);
-    const q = query(collection(db, "jobs"), where("recruiterId", "==", user.uid), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "jobs"), where("recruiterId", "==", user.uid));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const jobsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       } as Job));
+      
+      jobsData.sort((a, b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0));
+
       setJobs(jobsData);
       setIsLoading(false);
     }, (error) => {
@@ -392,7 +395,3 @@ export default function RecruiterJobsPage() {
     </>
   );
 }
-
-    
-
-    
