@@ -28,6 +28,7 @@ interface Job extends DocumentData {
   externalApplyLink?: string;
   experienceLevel?: string;
   status: string;
+  description?: string;
 }
 
 export default function CandidateJobsPage() {
@@ -141,10 +142,14 @@ export default function CandidateJobsPage() {
                 </div>
             ) : (
                 filteredJobs.map((job) => (
-                <Card key={job.id} className="cursor-pointer hover:border-primary transition-colors flex flex-col">
+                <Card 
+                  key={job.id} 
+                  className="flex flex-col cursor-pointer hover:border-primary transition-colors group"
+                  onClick={() => !job.externalApplyLink && setSelectedJob(job)}
+                >
                     <CardHeader>
-                    <CardTitle className="font-headline">{job.title}</CardTitle>
-                    <CardDescription>{job.company}</CardDescription>
+                      <CardTitle className="font-headline group-hover:text-primary">{job.title}</CardTitle>
+                      <CardDescription>{job.company}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow">
                       <div className="space-y-2 text-sm text-muted-foreground mb-4">
@@ -161,20 +166,23 @@ export default function CandidateJobsPage() {
                           )}
                       </div>
                       <div className="flex flex-wrap gap-2">
-                          {job.skills.map((skill) => (
-                          <Badge key={skill} variant="secondary">{skill}</Badge>
+                          {job.skills.slice(0,3).map((skill) => (
+                            <Badge key={skill} variant="secondary">{skill}</Badge>
                           ))}
+                          {job.skills.length > 3 && <Badge variant="secondary">...</Badge>}
                       </div>
                     </CardContent>
                     <CardFooter>
                       {job.externalApplyLink ? (
-                        <Button asChild className="w-full">
+                        <Button asChild className="w-full" onClick={(e) => e.stopPropagation()}>
                           <a href={job.externalApplyLink} target="_blank" rel="noopener noreferrer">
                             Apply Externally
                           </a>
                         </Button>
                       ) : (
-                        <Button className="w-full" onClick={() => setSelectedJob(job)}>View & Apply</Button>
+                        <div className="w-full text-center text-sm font-medium text-primary py-2">
+                          View & Apply
+                        </div>
                       )}
                     </CardFooter>
                 </Card>
@@ -182,24 +190,53 @@ export default function CandidateJobsPage() {
             )}
         </div>
             {selectedJob && (
-                <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle className="font-headline">Apply for {selectedJob.title}</DialogTitle>
-                    <DialogDescription>
-                    Submit your application for this position at {selectedJob.company}.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <p className="text-sm text-muted-foreground">You are applying as <span className="font-semibold text-foreground">{user?.email}</span>.</p>
-                    <p className="text-sm">Click submit to confirm your application. A recruiter will contact you if you're a good fit.</p>
-                </div>
-                <DialogFooter>
-                    <Button type="button" variant="ghost" onClick={() => setSelectedJob(null)} disabled={isSubmitting}>Cancel</Button>
-                    <Button type="submit" onClick={handleApply} disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Submit Application
-                    </Button>
-                </DialogFooter>
+                <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+                  <DialogHeader>
+                      <DialogTitle className="font-headline text-2xl">{selectedJob.title}</DialogTitle>
+                      <DialogDescription className="text-base">
+                          {selectedJob.company}
+                      </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="flex-grow overflow-y-auto pr-6 space-y-6 py-4">
+                      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                          <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-2 flex-shrink-0" /> {selectedJob.location || 'N/A'}
+                          </div>
+                          <div className="flex items-center">
+                              <Briefcase className="h-4 w-4 mr-2 flex-shrink-0" /> {selectedJob.type || 'Full-time'}
+                          </div>
+                          {selectedJob.experienceLevel && (
+                            <div className="flex items-center">
+                                <BarChart className="h-4 w-4 mr-2 flex-shrink-0" /> {selectedJob.experienceLevel}
+                            </div>
+                          )}
+                      </div>
+
+                      <div>
+                          <h4 className="font-semibold text-foreground mb-2">Skills Required</h4>
+                          <div className="flex flex-wrap gap-2">
+                              {selectedJob.skills.map((skill) => (
+                                  <Badge key={skill} variant="secondary">{skill}</Badge>
+                              ))}
+                          </div>
+                      </div>
+
+                      <div>
+                          <h4 className="font-semibold text-foreground mb-2">Job Description</h4>
+                          <div className="text-sm text-muted-foreground whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none">
+                              {selectedJob.description || "No description provided."}
+                          </div>
+                      </div>
+                  </div>
+                  
+                  <DialogFooter className="pt-4 border-t mt-auto">
+                      <Button type="button" variant="ghost" onClick={() => setSelectedJob(null)} disabled={isSubmitting}>Cancel</Button>
+                      <Button type="submit" onClick={handleApply} disabled={isSubmitting}>
+                          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Apply Now
+                      </Button>
+                  </DialogFooter>
                 </DialogContent>
             )}
         </Dialog>
