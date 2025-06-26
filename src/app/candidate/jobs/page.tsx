@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import type { DocumentData } from 'firebase/firestore';
 
-import { Briefcase, MapPin, Search, Loader2 } from 'lucide-react';
+import { Briefcase, MapPin, Search, Loader2, BarChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ interface Job extends DocumentData {
   skills: string[];
   recruiterId: string;
   externalApplyLink?: string;
+  experienceLevel?: string;
 }
 
 export default function CandidateJobsPage() {
@@ -90,7 +91,8 @@ export default function CandidateJobsPage() {
   const filteredJobs = jobs.filter(job =>
     job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()))
+    job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (job.experienceLevel && job.experienceLevel.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
 
@@ -100,7 +102,7 @@ export default function CandidateJobsPage() {
         <h1 className="text-lg font-semibold md:text-2xl font-headline">Find Your Next Job</h1>
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input type="search" placeholder="Search jobs, companies, skills..." className="pl-8" onChange={(e) => setSearchTerm(e.target.value)} />
+          <Input type="search" placeholder="Search jobs, skills, experience..." className="pl-8" onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
       </div>
 
@@ -121,15 +123,24 @@ export default function CandidateJobsPage() {
                     <CardDescription>{job.company}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow">
-                    <div className="flex items-center text-sm text-muted-foreground mb-4">
-                        <MapPin className="h-4 w-4 mr-1" /> {job.location || 'N/A'}
-                        <Briefcase className="h-4 w-4 mr-1 ml-4" /> {job.type || 'Full-time'}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {job.skills.map((skill) => (
-                        <Badge key={skill} variant="secondary">{skill}</Badge>
-                        ))}
-                    </div>
+                      <div className="space-y-2 text-sm text-muted-foreground mb-4">
+                          <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-2 flex-shrink-0" /> {job.location || 'N/A'}
+                          </div>
+                          <div className="flex items-center">
+                              <Briefcase className="h-4 w-4 mr-2 flex-shrink-0" /> {job.type || 'Full-time'}
+                          </div>
+                          {job.experienceLevel && (
+                              <div className="flex items-center">
+                                  <BarChart className="h-4 w-4 mr-2 flex-shrink-0" /> {job.experienceLevel}
+                              </div>
+                          )}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                          {job.skills.map((skill) => (
+                          <Badge key={skill} variant="secondary">{skill}</Badge>
+                          ))}
+                      </div>
                     </CardContent>
                     <CardFooter>
                       {job.externalApplyLink ? (

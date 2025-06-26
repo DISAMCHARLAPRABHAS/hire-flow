@@ -61,6 +61,7 @@ export default function RecruiterJobsPage() {
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [skills, setSkills] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
   const [externalApplyLink, setExternalApplyLink] = useState("");
 
   useEffect(() => {
@@ -91,6 +92,7 @@ export default function RecruiterJobsPage() {
     setLocation("");
     setDescription("");
     setSkills("");
+    setExperienceLevel("");
     setExternalApplyLink("");
   }
 
@@ -99,7 +101,7 @@ export default function RecruiterJobsPage() {
         toast({ title: "Error", description: "User not authenticated.", variant: "destructive" });
         return;
     }
-    if (!title || !company || !description || !skills) {
+    if (!title || !company || !description || !skills || !experienceLevel) {
         toast({ title: "Error", description: "Please fill all required fields.", variant: "destructive" });
         return;
     }
@@ -111,6 +113,7 @@ export default function RecruiterJobsPage() {
             location,
             description,
             skills: skills.split(',').map(s => s.trim()),
+            experienceLevel,
             externalApplyLink: externalApplyLink.trim(),
             recruiterId: user.uid,
             recruiterName: user.email,
@@ -154,6 +157,10 @@ export default function RecruiterJobsPage() {
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="location" className="text-right">Location</Label>
                 <Input id="location" placeholder="e.g. Remote" className="col-span-3" value={location} onChange={(e) => setLocation(e.target.value)} />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="experience" className="text-right">Experience Level</Label>
+                <Input id="experience" placeholder="e.g. 0-1 years" className="col-span-3" value={experienceLevel} onChange={(e) => setExperienceLevel(e.target.value)} />
               </div>
                <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="externalApplyLink" className="text-right">External Link (Optional)</Label>

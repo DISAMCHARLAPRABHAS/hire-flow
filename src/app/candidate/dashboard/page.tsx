@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from "next/link";
-import { ArrowUpRight, Briefcase, User, Loader2, MapPin } from "lucide-react";
+import { ArrowUpRight, Briefcase, User, Loader2, MapPin, BarChart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,7 @@ interface Application extends DocumentData {
   id: string;
   jobTitle: string;
   company: string;
+
   status: string;
   appliedAt?: { toDate: () => Date };
 }
@@ -39,6 +40,7 @@ interface Job extends DocumentData {
   company: string;
   location: string;
   createdAt: { toDate: () => Date };
+  experienceLevel?: string;
 }
 
 export default function CandidateDashboard() {
@@ -174,6 +176,12 @@ export default function CandidateDashboard() {
                         <MapPin className="h-3 w-3 mr-1" />
                         {job.location || 'N/A'}
                       </div>
+                      {job.experienceLevel && (
+                          <div className="text-sm text-muted-foreground flex items-center">
+                              <BarChart className="h-3 w-3 mr-1" />
+                              {job.experienceLevel}
+                          </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       {job.company}
