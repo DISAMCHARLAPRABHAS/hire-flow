@@ -24,6 +24,7 @@ interface Job extends DocumentData {
   type: string;
   skills: string[];
   recruiterId: string;
+  externalApplyLink?: string;
 }
 
 export default function CandidateJobsPage() {
@@ -131,7 +132,15 @@ export default function CandidateJobsPage() {
                     </div>
                     </CardContent>
                     <CardFooter>
-                    <Button className="w-full" onClick={() => setSelectedJob(job)}>View & Apply</Button>
+                      {job.externalApplyLink ? (
+                        <Button asChild className="w-full">
+                          <a href={job.externalApplyLink} target="_blank" rel="noopener noreferrer">
+                            Apply Externally
+                          </a>
+                        </Button>
+                      ) : (
+                        <Button className="w-full" onClick={() => setSelectedJob(job)}>View & Apply</Button>
+                      )}
                     </CardFooter>
                 </Card>
                 ))

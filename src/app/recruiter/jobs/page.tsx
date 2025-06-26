@@ -61,6 +61,7 @@ export default function RecruiterJobsPage() {
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [skills, setSkills] = useState("");
+  const [externalApplyLink, setExternalApplyLink] = useState("");
 
   useEffect(() => {
     if (!user || !db) return;
@@ -90,6 +91,7 @@ export default function RecruiterJobsPage() {
     setLocation("");
     setDescription("");
     setSkills("");
+    setExternalApplyLink("");
   }
 
   const handleCreateJob = async () => {
@@ -98,7 +100,7 @@ export default function RecruiterJobsPage() {
         return;
     }
     if (!title || !company || !description || !skills) {
-        toast({ title: "Error", description: "Please fill all fields.", variant: "destructive" });
+        toast({ title: "Error", description: "Please fill all required fields.", variant: "destructive" });
         return;
     }
 
@@ -109,6 +111,7 @@ export default function RecruiterJobsPage() {
             location,
             description,
             skills: skills.split(',').map(s => s.trim()),
+            externalApplyLink: externalApplyLink.trim(),
             recruiterId: user.uid,
             recruiterName: user.email,
             status: "Open",
@@ -151,6 +154,10 @@ export default function RecruiterJobsPage() {
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="location" className="text-right">Location</Label>
                 <Input id="location" placeholder="e.g. Remote" className="col-span-3" value={location} onChange={(e) => setLocation(e.target.value)} />
+              </div>
+               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="externalApplyLink" className="text-right">External Link (Optional)</Label>
+                <Input id="externalApplyLink" placeholder="https://company.com/apply" className="col-span-3" value={externalApplyLink} onChange={(e) => setExternalApplyLink(e.target.value)} />
               </div>
               <div className="grid grid-cols-4 items-start gap-4">
                 <Label htmlFor="description" className="text-right pt-2">Description</Label>
