@@ -88,12 +88,18 @@ export function UserAuthForm({ className, mode, ...props }: UserAuthFormProps) {
       }
     } catch (error: any) {
         console.error(error);
-        let description = "An unexpected error occurred. Please try again.";
+        let description: React.ReactNode = "An unexpected error occurred. Please try again.";
         
         if (error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('auth/api-key-not-valid'))) {
           description = "Your Firebase API key is not valid. Please ensure it's correctly set in your .env.local file and that you've restarted the development server."
         } else if (error.code === 'auth/configuration-not-found') {
-            description = "Firebase Authentication is not configured correctly. Please go to your Firebase console, navigate to Authentication > Sign-in method, and enable the Email/Password provider."
+            description = (
+                <span>
+                    Firebase Authentication is not configured correctly. Please go to your
+                    <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-bold px-1">Firebase console</a>
+                    , navigate to Authentication &gt; Sign-in method, and enable the Email/Password provider.
+                </span>
+            );
         } else {
           description = error.message;
         }
