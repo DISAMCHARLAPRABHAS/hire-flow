@@ -88,9 +88,13 @@ export function UserAuthForm({ className, mode, ...props }: UserAuthFormProps) {
       }
     } catch (error: any) {
         console.error(error);
+        let description = error.message;
+        if (error.code === 'auth/invalid-api-key' || (error.message && error.message.includes('auth/api-key-not-valid'))) {
+          description = "Your Firebase API key is not valid. Please ensure it's correctly set in your .env.local file and that you've restarted the development server."
+        }
         toast({
-            title: "An error occurred.",
-            description: error.message,
+            title: "Authentication failed",
+            description: description,
             variant: "destructive",
         })
     } finally {
