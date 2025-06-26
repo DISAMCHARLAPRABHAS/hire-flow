@@ -41,6 +41,7 @@ interface Job extends DocumentData {
   location: string;
   createdAt: { toDate: () => Date };
   experienceLevel?: string;
+  status: string;
 }
 
 export default function CandidateDashboard() {
@@ -53,7 +54,7 @@ export default function CandidateDashboard() {
   useEffect(() => {
     if (!user || !db) return;
 
-    setIsLoading(true);
+    let initialLoad = true;
 
     const appsQuery = query(
         collection(db, "applications"), 
@@ -70,11 +71,17 @@ export default function CandidateDashboard() {
         setActiveApplicationsCount(activeApps);
     });
 
-    const jobsQuery = query(collection(db, "jobs"), where("status", "==", "Open"), orderBy("createdAt", "desc"), limit(3));
+    const jobsQuery = query(collection(db, "jobs"), orderBy("createdAt", "desc"));
     const unsubscribeJobs = onSnapshot(jobsQuery, (snapshot) => {
-        const jobsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+        const jobsData = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as Job))
+            .filter(job => job.status === "Open")
+            .slice(0, 3);
         setRecentJobs(jobsData);
-        setIsLoading(false);
+        if (initialLoad) {
+            setIsLoading(false);
+            initialLoad = false;
+        }
     }, (error) => {
         console.error("Error fetching jobs from dashboard: ", error);
         toast({ title: "Error", description: "Could not fetch new jobs. This might be due to a missing database index. Check the browser console for a link to create it.", variant: "destructive" });

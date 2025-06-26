@@ -27,6 +27,7 @@ interface Job extends DocumentData {
   recruiterId: string;
   externalApplyLink?: string;
   experienceLevel?: string;
+  status: string;
 }
 
 export default function CandidateJobsPage() {
@@ -40,17 +41,19 @@ export default function CandidateJobsPage() {
   useEffect(() => {
     if (!db) return;
     setIsLoading(true);
-    const q = query(collection(db, "jobs"), where("status", "==", "Open"), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "jobs"), orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const jobsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
+      const jobsData = querySnapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Job))
+        .filter(job => job.status === "Open");
       setJobs(jobsData);
       setIsLoading(false);
     }, (error) => {
         console.error("Error fetching jobs: ", error);
         toast({ 
           title: "Error fetching jobs", 
-          description: "Could not fetch job listings. This might be due to a missing database index. Check your browser's developer console for an error message from Firebase with a link to create the required index.", 
+          description: "Could not fetch job listings. Please check your network connection and try again. If the problem persists, check the browser console for more details.", 
           variant: "destructive",
           duration: 10000,
         });
