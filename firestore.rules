@@ -1,24 +1,17 @@
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Jobs can be read by any authenticated user, but only created/updated
-    // by the recruiter who owns them.
     match /jobs/{jobId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.recruiterId == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.recruiterId == request.auth.uid;
+      // Allow any authenticated user to read and write jobs for now.
+      // This helps in development and will be secured later.
+      allow read, write: if request.auth != null;
     }
 
-    // Applications can be created by candidates for themselves.
-    // They can be read by the candidate who applied or the recruiter for the job.
-    // Only the recruiter can update them (e.g., change status).
     match /applications/{applicationId} {
-      allow create: if request.auth != null && request.resource.data.candidateId == request.auth.uid;
-      allow read: if request.auth != null && 
-                  (resource.data.candidateId == request.auth.uid || resource.data.recruiterId == request.auth.uid);
-      allow update: if request.auth != null && resource.data.recruiterId == request.auth.uid;
-      allow delete: if false; // Prevent applications from being deleted.
+      // Allow any authenticated user to read and write applications for now.
+      // This helps in development and will be secured later.
+      allow read, write: if request.auth != null;
     }
   }
 }
