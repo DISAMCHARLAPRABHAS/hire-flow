@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, limit, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import type { DocumentData } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 
@@ -33,6 +33,9 @@ interface Application extends DocumentData {
     candidateName: string;
     candidateEmail: string;
     jobTitle: string;
+    appliedAt?: {
+      toDate: () => Date;
+    };
 }
 
 export default function RecruiterDashboard() {
@@ -44,6 +47,7 @@ export default function RecruiterDashboard() {
   useEffect(() => {
     if (!user || !db) return;
 
+    let initialLoad = true;
     const commonQuery = where("recruiterId", "==", user.uid);
     
     // Fetch open positions
@@ -65,20 +69,29 @@ export default function RecruiterDashboard() {
     });
 
     // Fetch recent applications for table
-    const recentAppsQuery = query(collection(db, "applications"), commonQuery, orderBy("appliedAt", "desc"), limit(4));
+    const recentAppsQuery = query(collection(db, "applications"), commonQuery);
     const unsubscribeRecentApps = onSnapshot(recentAppsQuery, (snapshot) => {
         const appsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Application));
-        setRecentApplications(appsData);
-        if(isLoading) setIsLoading(false);
+        
+        appsData.sort((a, b) => (b.appliedAt?.toDate()?.getTime() || 0) - (a.appliedAt?.toDate()?.getTime() || 0));
+
+        setRecentApplications(appsData.slice(0, 4));
+        
+        if (initialLoad) {
+            setIsLoading(false);
+            initialLoad = false;
+        }
     }, (error) => {
         console.error("Error fetching recent applications:", error);
         toast({
             title: "Data Error",
-            description: "Could not fetch recent applications. A database index is likely required. Check the browser console for a link to create it.",
+            description: "Could not fetch recent applications.",
             variant: "destructive",
-            duration: 10000,
         });
-        if(isLoading) setIsLoading(false);
+        if (initialLoad) {
+          setIsLoading(false);
+          initialLoad = false;
+        }
     });
 
     return () => {
@@ -86,7 +99,7 @@ export default function RecruiterDashboard() {
       unsubscribeApps();
       unsubscribeRecentApps();
     };
-  }, [user, isLoading]);
+  }, [user]);
 
   return (
     <>
