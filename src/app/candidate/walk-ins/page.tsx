@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment, orderBy } from "firebase/firestore";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from "firebase/firestore";
 import type { DocumentData } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,9 @@ interface WalkInDrive extends DocumentData {
   mode: "Online" | "Offline";
   status: "Open" | "Closed";
   attendees: number;
+  createdAt: {
+    toDate: () => Date;
+  };
 }
 
 export default function CandidateWalkInsPage() {
@@ -43,17 +46,17 @@ export default function CandidateWalkInsPage() {
     setIsLoading(true);
     const q = query(
       collection(db, "walk-ins"), 
-      where("status", "==", "Open"), 
-      orderBy("createdAt", "desc")
+      where("status", "==", "Open")
     );
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const drivesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as WalkInDrive));
+      drivesData.sort((a, b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0));
       setWalkIns(drivesData);
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching walk-in drives: ", error);
-      toast({ title: "Error", description: "Failed to fetch walk-in drives.", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to fetch walk-in drives. This might be due to a missing database index. Check the browser console for a link to create it.", variant: "destructive" });
       setIsLoading(false);
     });
 
