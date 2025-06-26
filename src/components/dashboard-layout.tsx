@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronDown,
@@ -11,17 +11,13 @@ import {
   Menu,
   Settings,
 } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { auth, firebaseConfigured } from "@/lib/firebase";
+import { useAuth } from "@/hooks/use-auth";
 
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { HireFlowLogo } from "./icons";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { toast } from "@/hooks/use-toast";
 
 type NavItem = {
   href: string;
@@ -42,17 +39,41 @@ type NavItem = {
 type DashboardLayoutProps = {
   children: React.ReactNode;
   navItems: NavItem[];
-  userName: string;
-  userRole: string;
 };
 
 export function DashboardLayout({
   children,
   navItems,
-  userName,
-  userRole,
 }: DashboardLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const handleLogout = async () => {
+    if (!firebaseConfigured || !auth) {
+        toast({
+            title: "Logout failed",
+            description: "Firebase is not configured.",
+            variant: "destructive",
+        });
+        return;
+    }
+    try {
+      await signOut(auth);
+      router.push("/login");
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      toast({
+        title: "Logout failed",
+        description: "An error occurred while logging out.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const navLinks = (
     <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
@@ -71,6 +92,9 @@ export function DashboardLayout({
       ))}
     </nav>
   );
+
+  const userName = user?.email?.split('@')[0] || "User";
+  const userRole = user?.displayName || "Role";
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -111,12 +135,12 @@ export function DashboardLayout({
             <DropdownMenuTrigger asChild>
               <Button variant="secondary" className="flex items-center gap-2 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={`https://placehold.co/40x40.png`} alt={userName} data-ai-hint="profile avatar" />
-                  <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={user?.photoURL || `https://placehold.co/40x40.png`} alt={userName} data-ai-hint="profile avatar" />
+                  <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="hidden md:flex flex-col items-start">
                     <span className="font-medium">{userName}</span>
-                    <span className="text-xs text-muted-foreground">{userRole}</span>
+                    <span className="text-xs text-muted-foreground capitalize">{userRole}</span>
                 </div>
                 <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
               </Button>
@@ -127,7 +151,7 @@ export function DashboardLayout({
               <DropdownMenuItem><Settings className="mr-2 h-4 w-4"/>Settings</DropdownMenuItem>
               <DropdownMenuItem><CircleUser className="mr-2 h-4 w-4"/>Profile</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive"><LogOut className="mr-2 h-4 w-4"/>Logout</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onSelect={handleLogout}><LogOut className="mr-2 h-4 w-4"/>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

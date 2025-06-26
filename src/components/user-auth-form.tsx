@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth"
+import { auth, firebaseConfigured } from "@/lib/firebase"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
@@ -32,14 +34,13 @@ const signupSchema = z.object({
 type FormData = z.infer<typeof loginSchema> | z.infer<typeof signupSchema>;
 
 export function UserAuthForm({ className, mode, ...props }: UserAuthFormProps) {
-  const searchParams = useSearchParams()
+  const router = useRouter();
   const schema = mode === 'login' ? loginSchema : signupSchema;
 
   const {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -51,19 +52,50 @@ export function UserAuthForm({ className, mode, ...props }: UserAuthFormProps) {
   })
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
 
-  const role = watch("role" as "role");
-
   async function onSubmit(data: FormData) {
-    setIsLoading(true)
+    setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false)
-      toast({
-        title: "Success!",
-        description: `You have successfully ${mode === 'login' ? 'logged in' : 'signed up'}. Redirecting...`,
-      })
-      // Here you would typically handle the auth logic and redirect
-    }, 3000)
+    if (!firebaseConfigured || !auth) {
+        toast({
+            title: "Firebase not configured",
+            description: "Please set up your Firebase credentials in .env.local",
+            variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+      if (mode === 'signup') {
+        const signupData = data as z.infer<typeof signupSchema>;
+        const userCredential = await createUserWithEmailAndPassword(auth, signupData.email, signupData.password);
+        await updateProfile(userCredential.user, {
+            displayName: signupData.role
+        });
+        toast({
+            title: "Account created.",
+            description: "You have been successfully signed up.",
+        });
+        // The redirect is handled by the AuthProvider
+      } else {
+        const loginData = data as z.infer<typeof loginSchema>;
+        await signInWithEmailAndPassword(auth, loginData.email, loginData.password);
+        toast({
+            title: "Login successful.",
+            description: "Redirecting to your dashboard.",
+        });
+        // The redirect is handled by the AuthProvider
+      }
+    } catch (error: any) {
+        console.error(error);
+        toast({
+            title: "An error occurred.",
+            description: error.message,
+            variant: "destructive",
+        })
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -84,9 +116,9 @@ export function UserAuthForm({ className, mode, ...props }: UserAuthFormProps) {
               disabled={isLoading}
               {...register("email")}
             />
-            {errors?.email && (
+            {(errors as any)?.email && (
               <p className="px-1 text-xs text-destructive">
-                {errors.email.message}
+                {(errors as any).email.message}
               </p>
             )}
           </div>
@@ -102,9 +134,9 @@ export function UserAuthForm({ className, mode, ...props }: UserAuthFormProps) {
               disabled={isLoading}
               {...register("password")}
             />
-             {errors?.password && (
+             {(errors as any)?.password && (
               <p className="px-1 text-xs text-destructive">
-                {errors.password.message}
+                {(errors as any).password.message}
               </p>
             )}
           </div>
@@ -127,9 +159,9 @@ export function UserAuthForm({ className, mode, ...props }: UserAuthFormProps) {
                         <Label htmlFor="r-recruiter">Recruiter</Label>
                     </div>
                 </RadioGroup>
-                {errors?.role && (
+                {(errors as any)?.role && (
                     <p className="px-1 text-xs text-destructive">
-                        {errors.role.message}
+                        {(errors as any).role.message}
                     </p>
                 )}
             </div>
