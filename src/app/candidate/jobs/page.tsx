@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment, orderBy } from 'firebase/firestore';
 import type { DocumentData } from 'firebase/firestore';
 
 import { Briefcase, MapPin, Search, Loader2, BarChart } from 'lucide-react';
@@ -39,7 +39,7 @@ export default function CandidateJobsPage() {
   useEffect(() => {
     if (!db) return;
     setIsLoading(true);
-    const q = query(collection(db, "jobs"), where("status", "==", "Open"));
+    const q = query(collection(db, "jobs"), where("status", "==", "Open"), orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const jobsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Job));
@@ -47,7 +47,11 @@ export default function CandidateJobsPage() {
       setIsLoading(false);
     }, (error) => {
         console.error("Error fetching jobs: ", error);
-        toast({ title: "Error", description: "Could not fetch jobs.", variant: "destructive" });
+        toast({ 
+          title: "Error fetching jobs", 
+          description: "Could not fetch job listings. This might be due to a missing database index. Check your browser's developer console for an error message from Firebase with a link to create the required index.", 
+          variant: "destructive",
+        });
         setIsLoading(false);
     });
 
